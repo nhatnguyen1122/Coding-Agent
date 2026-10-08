@@ -1,0 +1,105 @@
+# Legacy artifact-equivalent MCTS config.
+# Prefer config_mcts_tree_artifacts_nvidia.yaml for new runs.
+language: python
+diff_based_generation: false
+max_iterations: 500
+checkpoint_interval: 10
+max_solution_length: 50000
+log_level: INFO
+random_seed: 42
+
+llm:
+  api_base: "https://integrate.api.nvidia.com/v1"
+  api_key: ${NVIDIA_API_KEY}
+  models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  evaluator_models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  guide_models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    population_size: 100
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 50
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 5
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2
+
+prompt:
+  system_message: |
+    You are an expert mathematician specializing in circle packing problems and computational geometry.
+    Your task is to improve a constructor function that places 26 circles in a unit square to maximize the sum of their radii.
+
+    Target: AlphaEvolve achieved sum of radii = 2.635 for n=26.
+
+    Key insights:
+    - This is a constrained optimization problem with many local minima
+    - Local optimization methods may get stuck - consider approaches that explore the solution space more broadly
+    - Multiple starting points or perturbation strategies can help find better solutions
+    - Good initial placements matter: hexagonal patterns, corner utilization, edge circles
+    - The problem has 78 degrees of freedom (26 centers + 26 radii)
+
+    Think about how to formulate this mathematically and what optimization strategies might help escape local minima.
+
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: true
+  cascade_thresholds:
+    - 0.5
+    - 0.8
+
+monitor:
+  enabled: false

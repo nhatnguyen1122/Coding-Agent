@@ -1,0 +1,80 @@
+language: python
+diff_based_generation: true
+max_iterations: 100
+checkpoint_interval: 10
+max_solution_length: 60000
+prompt:
+  system_message: "SETTING:\nYou are an expert in computational linear algebra, numerical optimization, and AI-driven algorithm discovery.\nYour task is to evolve and optimize a Python script to find the lowest-rank decomposition of the matrix multiplication tensor for a specific instance with variables (n=2,m=4,p=5) fixed.\n\nPROBLEM CONTEXT:\nTarget: Find the minimal rank R for the tensor decomposition T_ijk = \u2211_r=1^R U_ir V_jr W_kr.\nThe goal is to beat the best algorithm and discover a state-of-the-art algorithm with the lowest rank possible.\nConstraint: The reconstructed tensor from the learned factors (U, V, W) must be EXACTLY EQUAL to the ground-truth matrix multiplication tensor T_ijk after its composition to a tensor form.\nThis can be enforced in two ways:\n* by minimizing the loss function to near-zero, and do a \"rounding algorithm\" to make the continuous approximate solution converge to a exactly one where its elements are integer multiples of a constant.\n* by making\
+    \ an algorithm that search in the space of the set of possible elements, or a grid of elements that can compose the final decomposition.\nYou can be creative and choose the best possible algorithm to solve this problem, for example incorporating constraints that force the solution to be in the right space, or by enforcing this from the start.\n\nMATHEMATICAL FORMULATION:\nGiven: The standard matrix multiplication tensor T for n, m, p fixed.\nObjective: Find the smallest integer R such that there exist real or complex valued matrices U, V, W of shapes (n*p, R), (n*m, R), and (m*p, R) that compose T_ijk.\n\nPERFORMANCE METRICS:\ncombined_score: The minimal inverse rank 32/R for which the optimization was successful, where 32 is the best know decomposition found by Google. A value of 1.0 means you have matched the state-of-the-art. (PRIMARY OBJECTIVE - maximize 1/R).\nloss: The final loss function result if applicable to the method used.\nrank: rank of the best decomposition found.\neval_time:\
+    \ time of the evaluation.\n\nVALIDATION FRAMEWORK:\nNumerical Validation: The final loss for a successful run must be below the success_threshold (e.g., 1e-6).\nEquality validation: The final decomposition must be exactly equal to the tensor T_ijk:\nmatmul_tensor = np.zeros((n * m, m * p, p * n), dtype=np.int32)\nfor i in range(n):\n  for j in range(m):\n    for k in range(p):\n      matmul_tensor[i * m + j][j * p + k][k * n + i] = 1\nRank Validation: The discovered_rank must be an integer.\n\nTECHNICAL REQUIREMENTS:\nReproducibility: Ensure the JAX PRNGKey is handled correctly (or any lib with random numbers) to get reproducible results for a given set of initial conditions and hyperparameters.\nNumerical Stability: Be aware of potential floating-point precision issues and the possibility of exploding or vanishing gradients, suggesting remedies like gradient clipping if necessary.\n\nPROBLEM-SPECIFIC CONSIDERATIONS:\nInitialization is Key: Due to the non-convex landscape, the success\
+    \ of a run is highly dependent on the random initialization. A robust solution should work from multiple different random seeds.\nSteps vs. Learning Rate Trade-off: A lower learning rate might require more num_steps to converge, and vice-versa. Explore this relationship to find the most efficient path to a solution.\nFrom Discovery to Algorithm: The end goal is not just the factors U, V, W, but the algorithm they represent. A good solution should be interpretable as a series of R multiplications and additions/subtractions.\nThe robustness and efficiency of the proposed code and hyperparameter configuration (i.e., it should converge reliably and quickly).\n"
+evaluator:
+  timeout: 600
+  max_retries: 3
+llm:
+  api_base: https://integrate.api.nvidia.com/v1
+  api_key: ${NVIDIA_API_KEY}
+  models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  evaluator_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  guide_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    population_size: 100
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 50
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 5
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2

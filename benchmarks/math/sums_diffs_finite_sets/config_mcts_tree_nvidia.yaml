@@ -1,0 +1,78 @@
+language: python
+diff_based_generation: true
+max_iterations: 100
+checkpoint_interval: 10
+max_solution_length: 60000
+prompt:
+  system_message: "SETTING:\nYou are an expert in number theory, combinatorial optimization, and AI-driven mathematical discovery.\nYour task is to evolve and optimize a Python script to find a finite set of integers `U` that provides a new, world-record **lower bound** for the constant C\u2086.\n\nPROBLEM CONTEXT:\nTarget: Find a finite set `U` of non-negative integers (containing 0) that **maximizes** the objective function:\nC6(U) = 1 + log(|U-U| / |U+U|) / log(2*max(U) + 1)\n\nThis maximum value provides a tight lower bound for the constant C6.\n\nCurrent best known lower bound: C6 \u2265 1.158417281556896\nGoal: Find a set `U` that results in a C6 value greater than 1.158417281556896.\n\nPERFORMANCE METRICS:\n- c6_bound: Bound found.\n- combined_score: c6_bound/1.158417281556896 (The primary objective is to MAXIMIZE this value - a value > 1 means a new record).\n- set_size: size of the set U.\n- max_val: max value in the set U.\n- eval_time: evaluation time of the main program.\n\n\
+    VALIDATION FRAMEWORK:\n- The evaluation script re-computes the C6 value using standard NumPy set operations and verifies the constraints on `U`.\n"
+evaluator:
+  timeout: 600
+  max_retries: 3
+llm:
+  api_base: https://integrate.api.nvidia.com/v1
+  api_key: ${NVIDIA_API_KEY}
+  models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  evaluator_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  guide_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    population_size: 100
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 50
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 5
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2

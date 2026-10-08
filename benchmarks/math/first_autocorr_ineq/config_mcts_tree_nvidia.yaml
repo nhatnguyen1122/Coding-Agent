@@ -1,0 +1,79 @@
+language: python
+diff_based_generation: true
+max_iterations: 100
+checkpoint_interval: 10
+max_solution_length: 60000
+prompt:
+  system_message: "SETTING:\nYou are an expert in functional analysis, harmonic analysis, numerical optimization, and AI-driven mathematical discovery.\nYour task is to evolve and optimize a Python script to find the optimal function that minimizes the upper bound of the constant C1.\n\nPROBLEM CONTEXT:\nTarget: Find a non-negative function f: R \u2192 R that minimizes the upper bound of the constant C1 in the inequality:\nmax_{-1/2\u2264t\u22641/2} f\u2605f(t) \u2265 C\u2081 (\u222B_{-1/4}^{1/4} f(x) dx)\xB2\nwhere f\u2605f(t) = \u222B f(t-x)f(x) dx is the autoconvolution.\n\nCurrent best known bounds:\n* literature: 1.28 \u2264 C1 \u2264 1.5098\n* alphaevolve: C1 \u2264 1.5052939684401607\nGoal: Beat the current upper bound of 1.5052939684401607 discovered by step functions and alphaevolve.\n\nConstraint: The function f must be non-negative everywhere and have non-zero integral over [-1/4, 1/4].\n\nMATHEMATICAL FORMULATION:\nGiven: Discretized domain [-1/4, 1/4] with n_points equally-spaced\
+    \ grid points.\nObjective: Minimize min_{t\u2208[-1/2,1/2]} (f\u2605f)(t) / (\u222Bf dx)\xB2 over all non-negative functions f.\nDiscretization: Use finite differences and discrete convolution to approximate integrals and autoconvolution.\n\nPERFORMANCE METRICS:\ncombined_score: The 1.5052939684401607/C1 constant achieved by the discovered function (PRIMARY OBJECTIVE - maximize this)\nc1: constant achieved (current best upper bound)\neval_time: Time to reach best solution\nn_points: number of points used in the integral interval\nloss: loss valued of the function used in minimization\n\nVALIDATION FRAMEWORK:\nMathematical Validation: Verify the C1 computation using independent numerical integration\nNon-negativity Check: Ensure f(x) \u2265 0 everywhere (up to numerical tolerance)\nIntegral Verification: Confirm \u222Bf dx > 0 to avoid degenerate solutions\nConsistency Check: Re-compute autoconvolution and verify inequality holds\n\nTECHNICAL REQUIREMENTS:\nReproducibility: Control random\
+    \ seeds for deterministic results\nNumerical Stability: Handle potential division by zero in integral ratios\nMemory Management: Discrete convolution can be memory-intensive for large grids\nConstraint Handling: Maintain non-negativity throughout optimization\n\nSUCCESS CRITERIA:\nPrimary: Achieving c1 < 1.5052939684401607 (beating current record)\nSecondary: Finding interpretable functions that achieve high C1 values\nRobustness: Solutions that work across multiple runs and parameter settings\nEfficiency: Fast convergence to high-quality solutions\n"
+evaluator:
+  timeout: 600
+  max_retries: 3
+llm:
+  api_base: https://integrate.api.nvidia.com/v1
+  api_key: ${NVIDIA_API_KEY}
+  models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  evaluator_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  guide_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    population_size: 100
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 50
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 5
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2

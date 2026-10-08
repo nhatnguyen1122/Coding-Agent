@@ -1,0 +1,128 @@
+# OpenEvolve normal circle-packing run with inner program MCTS and outer island-lineage MCTS.
+# Use this with benchmarks/math/circle_packing/evaluator.py.
+language: python
+diff_based_generation: false
+max_iterations: 100
+checkpoint_interval: 10
+max_solution_length: 50000
+log_level: INFO
+random_seed: 42
+
+llm:
+  api_base: "https://integrate.api.nvidia.com/v1"
+  api_key: ${NVIDIA_API_KEY}
+  models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  evaluator_models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  guide_models:
+    - name: "openai/gpt-oss-120b"
+      api_base: "https://integrate.api.nvidia.com/v1"
+      api_key: ${NVIDIA_API_KEY}
+      weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    island_selector: mcts
+    population_size: 60
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 25
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 12
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2
+    island_mcts_exploration_constant: 2.0
+    island_mcts_backup: mean
+    island_mcts_backup_alpha: 1.0
+    island_mcts_selection_policy: uct
+    island_mcts_reward_discount: 0.97
+    island_mcts_enable_modes: false
+    island_mcts_modes: [local_refine, novelty_context, paradigm_context]
+    island_mcts_mode_policy: uct
+    island_mcts_mode_reward_discount: 0.99
+    island_mcts_mode_exploration_constant: 1.0
+    island_mcts_log_modes: false
+    island_mcts_enable_expansion: true
+    island_mcts_expansion_min_visits: 3
+    island_mcts_expansion_c: 1.5
+    island_mcts_expansion_alpha: 0.5
+    island_mcts_spawn_cooldown_iterations: 20
+    island_mcts_spawn_min_quality_ratio: 0.8
+    island_mcts_select_internal_nodes: true
+    island_mcts_internal_node_bias: 0.0
+    island_mcts_spawn_warmup_evaluations: 3
+    island_mcts_w_global_delta: 0.55
+    island_mcts_w_local_delta: 0.30
+    island_mcts_w_quality: 0.10
+    island_mcts_w_novelty: 0.03
+    island_mcts_w_accepted: 0.02
+    island_mcts_w_invalid: 0.20
+    island_mcts_failed_iteration_reward: -0.20
+    island_mcts_gate_novelty_by_quality: true
+
+prompt:
+  system_message: |
+    You are an expert mathematician specializing in circle packing problems and computational geometry. Your task is to improve a constructor function that directly produces a specific arrangement of 26 circles in a unit square, maximizing the sum of their radii.
+
+    Key insights:
+    - Circle packings often follow hexagonal patterns in the densest regions
+    - Edge effects make square container packing harder than infinite packing
+    - Circles can be placed in layers or shells when confined to a square
+
+evaluator:
+  timeout: 60
+  memory_limit_mb: 8192
+  max_retries: 3
+  cascade_evaluation: true
+  cascade_thresholds:
+    - 0.5
+    - 0.75
+
+monitor:
+  enabled: false

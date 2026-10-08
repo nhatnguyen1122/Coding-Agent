@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coding-agent"
+dynamic = ["version"]
+description = "MCTS-driven program discovery for scientific and systems optimization"
+readme = "README.md"
+requires-python = ">=3.10, <3.14"
+license = "Apache-2.0"
+dependencies = [
+    "openai>=1.0.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.64.0",
+    "numpy>=1.22.0",
+    "python-dotenv>=1.2.1",
+]
+
+[project.optional-dependencies]
+math = [
+    "scipy>=1.11.0",
+    "sympy>=1.14.0",
+    "jax>=0.6.2",
+    "optax>=0.2.6",
+    "torch",
+    "scikit-learn>=1.0.0",
+    "numba",
+    "pandas",
+    "matplotlib",
+    "plotly",
+    "networkx",
+    "cvxpy",
+    "autograd",
+    "pymoo",
+    "PyWavelets",
+]
+adrs = [
+    "numpy>=1.22.0",
+    "pandas",
+    "networkx>=3.2,<3.4",
+    "torch",
+]
+external = [
+    "openevolve",
+    "gepa[full]",
+    "litellm>=1.81",  # gepa[full] needs litellm, but uv override-dependencies strips the [full] extra
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "mypy>=0.950",
+    "requests>=2.28.0",
+]
+
+[tool.uv]
+override-dependencies = ["httpx>=0.28.1", "gepa>=0.0.26"]
+
+[tool.uv.sources]
+openevolve = { git = "https://github.com/algorithmicsuperintelligence/openevolve.git", branch = "main" }
+gepa = { git = "https://github.com/gepa-ai/gepa.git", branch = "main" }
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[project.scripts]
+coding-agent = "coding_agent.cli:main"
+coding-agent-viewer = "coding_agent.extras.monitor.viewer:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests requiring external services"
+]
+addopts = "--strict-markers"
+
+[tool.setuptools.packages.find]
+include = ["coding_agent*"]
+
+[tool.setuptools.package-data]
+coding_agent = [
+    "context_builder/*/templates/*.txt",
+    "search/evox/config/*.yaml",
+    "search/evox/config/*.txt",
+    "extras/external/defaults/*.yaml",
+    "extras/monitor/dashboard.html",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "coding_agent._version.__version__"}

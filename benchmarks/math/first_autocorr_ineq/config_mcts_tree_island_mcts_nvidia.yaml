@@ -1,0 +1,177 @@
+language: python
+diff_based_generation: true
+max_iterations: 100
+checkpoint_interval: 10
+max_solution_length: 60000
+prompt:
+  system_message: 'SETTING:
+
+    You are an expert in functional analysis, harmonic analysis, numerical optimization, and AI-driven mathematical discovery.
+
+    Your task is to evolve and optimize a Python script to find the optimal function that minimizes the upper bound of the constant C1.
+
+
+    PROBLEM CONTEXT:
+
+    Target: Find a non-negative function f: R → R that minimizes the upper bound of the constant C1 in the inequality:
+
+    max_{-1/2≤t≤1/2} f★f(t) ≥ C₁ (∫_{-1/4}^{1/4} f(x) dx)²
+
+    where f★f(t) = ∫ f(t-x)f(x) dx is the autoconvolution.
+
+
+    Current best known bounds:
+
+    * literature: 1.28 ≤ C1 ≤ 1.5098
+
+    * alphaevolve: C1 ≤ 1.5052939684401607
+
+    Goal: Beat the current upper bound of 1.5052939684401607 discovered by step functions and alphaevolve.
+
+
+    Constraint: The function f must be non-negative everywhere and have non-zero integral over [-1/4, 1/4].
+
+
+    MATHEMATICAL FORMULATION:
+
+    Given: Discretized domain [-1/4, 1/4] with n_points equally-spaced grid points.
+
+    Objective: Minimize min_{t∈[-1/2,1/2]} (f★f)(t) / (∫f dx)² over all non-negative functions f.
+
+    Discretization: Use finite differences and discrete convolution to approximate integrals and autoconvolution.
+
+
+    PERFORMANCE METRICS:
+
+    combined_score: The 1.5052939684401607/C1 constant achieved by the discovered function (PRIMARY OBJECTIVE - maximize this)
+
+    c1: constant achieved (current best upper bound)
+
+    eval_time: Time to reach best solution
+
+    n_points: number of points used in the integral interval
+
+    loss: loss valued of the function used in minimization
+
+
+    VALIDATION FRAMEWORK:
+
+    Mathematical Validation: Verify the C1 computation using independent numerical integration
+
+    Non-negativity Check: Ensure f(x) ≥ 0 everywhere (up to numerical tolerance)
+
+    Integral Verification: Confirm ∫f dx > 0 to avoid degenerate solutions
+
+    Consistency Check: Re-compute autoconvolution and verify inequality holds
+
+
+    TECHNICAL REQUIREMENTS:
+
+    Reproducibility: Control random seeds for deterministic results
+
+    Numerical Stability: Handle potential division by zero in integral ratios
+
+    Memory Management: Discrete convolution can be memory-intensive for large grids
+
+    Constraint Handling: Maintain non-negativity throughout optimization
+
+
+    SUCCESS CRITERIA:
+
+    Primary: Achieving c1 < 1.5052939684401607 (beating current record)
+
+    Secondary: Finding interpretable functions that achieve high C1 values
+
+    Robustness: Solutions that work across multiple runs and parameter settings
+
+    Efficiency: Fast convergence to high-quality solutions
+
+    '
+evaluator:
+  timeout: 600
+  max_retries: 3
+llm:
+  api_base: https://integrate.api.nvidia.com/v1
+  api_key: ${NVIDIA_API_KEY}
+  models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  evaluator_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  guide_models:
+  - name: openai/gpt-oss-120b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    weight: 1.0
+  temperature: 0.2
+  max_tokens: 4096
+  timeout: 600
+  retries: 3
+  retry_delay: 5
+  max_total_tokens: 5000000
+search:
+  type: island_mcts
+  num_context_programs: 4
+  database:
+    population_manager: mcts_tree
+    population_size: 100
+    num_islands: 4
+    decay: 0.9
+    intensity_min: 0.15
+    intensity_max: 0.5
+    use_adaptive_search: true
+    use_ucb_selection: true
+    use_migration: true
+    use_unified_archive: false
+    fixed_intensity: 0.4
+    migration_interval: 10
+    migration_count: 5
+    local_context_program_ratio: 0.6
+    archive_size: 50
+    diversity_strategy: code
+    use_dynamic_islands: true
+    max_islands: 12
+    spawn_productivity_threshold: 0.015
+    spawn_cooldown_iterations: 30
+    use_paradigm_breakthrough: true
+    paradigm_window_size: 10
+    paradigm_improvement_threshold: 0.12
+    paradigm_max_uses: 2
+    paradigm_num_to_generate: 3
+    paradigm_max_tried: 10
+    enable_error_retry: true
+    max_error_retries: 2
+    fitness_key: combined_score
+    mcts_exploration_constant: 0.7
+    mcts_qd_weight: 0.5
+    mcts_max_tree_depth: 15
+    mcts_backup: mixed
+    mcts_backup_alpha: 0.5
+    mcts_widening_alpha: 0.5
+    mcts_w_quality: 0.35
+    mcts_w_delta: 0.25
+    mcts_w_novelty: 0.2
+    mcts_w_invalid: 0.2
+    island_selector: mcts
+    island_mcts_exploration_constant: 1.0
+    island_mcts_backup: mixed
+    island_mcts_backup_alpha: 0.5
+    island_mcts_enable_expansion: true
+    island_mcts_expansion_min_visits: 3
+    island_mcts_expansion_c: 1.5
+    island_mcts_expansion_alpha: 0.5
+    island_mcts_spawn_cooldown_iterations: 20
+    island_mcts_spawn_min_quality_ratio: 0.8
+    island_mcts_w_global_delta: 0.4
+    island_mcts_w_local_delta: 0.25
+    island_mcts_w_quality: 0.2
+    island_mcts_w_novelty: 0.1
+    island_mcts_w_accepted: 0.05
+    island_mcts_w_invalid: 0.2
+log_level: INFO
+random_seed: 42
